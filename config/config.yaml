@@ -1,0 +1,89 @@
+# Stock Recommendation Engine Configuration
+
+# Data Sources
+data_sources:
+  market_data:
+    provider: "mock"  # Options: polygon, alpha_vantage, finnhub, tiingo, mock
+    # Using mock provider for reliable training (no API limits, instant)
+    # Switch to "alpha_vantage" or "polygon" for real data when needed
+    api_key: "${MARKET_DATA_API_KEY}"  # Set in .env file
+    base_url: "https://www.alphavantage.co/query"
+    rate_limit: 0.2  # requests per second
+    
+  news:
+    provider: "mock"  # Options: finnhub, newsapi, financialmodelingprep, mock
+    # Using mock provider for reliable training (no API limits)
+    # Switch to "newsapi" or "finnhub" for real news when needed
+    api_key: "${NEWS_API_KEY}"
+    base_url: "https://newsapi.org/v2"
+    rate_limit: 60  # requests per minute
+    
+  social:
+    enabled: false  # Optional: Twitter/X, Reddit integration
+    provider: "twitter"  # TODO: Implement when needed
+
+# Database
+database:
+  type: "sqlite"  # Options: sqlite, postgresql, mysql
+  path: "data/stock_engine.db"
+  # For production:
+  # host: "${DB_HOST}"
+  # port: "${DB_PORT}"
+  # user: "${DB_USER}"
+  # password: "${DB_PASSWORD}"
+  # name: "${DB_NAME}"
+
+# Model Configuration
+models:
+  market_model:
+    type: "lightgbm"  # Options: lightgbm, xgboost, catboost
+    target_horizon_days: 252  # 12 months
+    prediction_window_days: [63, 126, 252]  # 3m, 6m, 12m
+    features:
+      technical: true
+      fundamental: true
+      sentiment: true
+      macro: true
+    
+  behavior_model:
+    type: "lightgbm"
+    min_history_actions: 10  # Minimum user actions to train
+    follow_threshold: 0.5  # Minimum % of suggested size to count as "follow"
+    
+# Portfolio Optimization
+portfolio:
+  benchmark_ticker: "SPY"  # S&P 500 ETF
+  max_single_stock_weight: 0.10  # 10% max per stock
+  max_sector_weight: 0.30  # 30% max per sector
+  rebalance_threshold: 0.01  # 1% weight diff triggers trade
+  max_turnover_per_rebalance: 0.20  # Max 20% portfolio turnover
+  min_trade_size: 0.005  # 0.5% of portfolio minimum
+  target_volatility: 0.15  # 15% annualized volatility
+  
+# Event Processing
+events:
+  sentiment_window_short_days: 7
+  sentiment_window_medium_days: 30
+  shock_threshold_zscore: 2.0  # Z-score for mention volume spike
+  event_impact_decay_days: 90  # Events decay over 90 days
+  high_impact_sentiment_threshold: -0.7  # Extreme negative
+  
+# Training
+training:
+  train_start_date: "2020-01-01"  # Start date for training data
+  train_end_date: "2023-12-31"  # End date for training data
+  validation_split: 0.2
+  retrain_frequency_days: 30
+  feature_lookback_days: 252  # 1 year of history for features
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/stock_engine.log"
+  
+# API
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+
